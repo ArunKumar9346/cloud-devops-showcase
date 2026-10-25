@@ -1,0 +1,67 @@
+# Containerized Microservices on AKS with Helm
+# Sample values.yaml for a microservice deployment
+
+replicaCount: 2
+
+image:
+  repository: myregistry.azurecr.io/sample-service
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: api-tls
+      hosts:
+        - api.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 80
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# RBAC and Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "sample-service-sa"
+
+# Monitoring via Azure Monitor / Prometheus
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
